@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  passwordHash      String
+  name              String
+  role              String   @default("REQUESTER") // REQUESTER | CONNECTOR | ADMIN
+  bonusPoints       Int      @default(10)
+  isFrozen          Boolean  @default(false)
+  hasContributedData Boolean @default(false)
+  createdAt         DateTime @default(now())
+  lastActiveAt      DateTime @default(now())
+
+  profile           Profile?
+  icpRequests       ICPRequest[]
+  requestedIntros   IntroRequest[]  @relation("RequesterIntros")
+  connectorIntros   IntroRequest[]  @relation("ConnectorIntros")
+  feedbacks         Feedback[]
+  notifications     Notification[]
+  bonusTransactions BonusTransaction[]
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String?  @unique
+  fullName    String
+  headline    String   @default("")
+  company     String   @default("")
+  title       String   @default("")
+  industry    String   @default("")
+  companySize String   @default("")
+  region      String   @default("")
+  linkedinUrl String   @default("")
+  description String   @default("")
+  isLead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user         User?        @relation(fields: [userId], references: [id])
+  connectionsA Connection[] @relation("ProfileA")
+  connectionsB Connection[] @relation("ProfileB")
+  leads        Lead[]
+  contributorIntros IntroRequest[] @relation("ContributorProfile")
+  insight      ProfileInsight?
+}
+
+model Connection {
+  id         String   @id @default(cuid())
+  profileAId String
+  profileBId String
+  createdAt  DateTime @default(now())
+
+  profileA Profile @relation("ProfileA", fields: [profileAId], references: [id])
+  profileB Profile @relation("ProfileB", fields: [profileBId], references: [id])
+
+  @@unique([profileAId, profileBId])
+}
+
+model ICPRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  industry    String
+  role        String
+  companySize String
+  region      String
+  description String   @default("")
+  status      String   @default("PENDING") // PENDING | MATCHED | COMPLETED
+  createdAt   DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id])
+  leads Lead[]
+}
+
+model Lead {
+  id           String   @id @default(cuid())
+  icpRequestId String
+  profileId    String
+  matchScore   Int      @default(0)
+  status       String   @default("SUGGESTED") // SUGGESTED | SELECTED | INTRO_SENT | FEEDBACK_GIVEN
+  createdAt    DateTime @default(now())
+
+  icpRequest    ICPRequest     @relation(fields: [icpRequestId], references: [id])
+  profile       Profile        @relation(fields: [profileId], references: [id])
+  introRequests IntroRequest[]
+}
+
+model IntroRequest {
+  id                   String    @id @default(cuid())
+  leadId               String
+  requesterId          String
+  connectorId          String
+  connectionType       String    @default("DIRECT") // DIRECT | INDIRECT
+  contributorProfileId String?
+  status               String    @default("PENDING") // PENDING | ACCEPTED | DECLINED | EXPIRED
+  draftMessage         String    @default("")
+  declineReason        String?
+  declineComment       String?
+  respondedAt          DateTime?
+  createdAt            DateTime  @default(now())
+  expiresAt            DateTime
+
+  lead               Lead     @relation(fields: [leadId], references: [id])
+  requester          User     @relation("RequesterIntros", fields: [requesterId], references: [id])
+  connector          User     @relation("ConnectorIntros", fields: [connectorId], references: [id])
+  contributorProfile Profile? @relation("ContributorProfile", fields: [contributorProfileId], references: [id])
+  feedbacks          Feedback[]
+}
+
+model Feedback {
+  id             String   @id @default(cuid())
+  introRequestId String
+  userId         String
+  status         String   // NO_RESPONSE | IN_TALKS | STALE | NOT_MOVING_FORWARD
+  comment        String?
+  connectedOnWhatsapp Boolean @default(false)
+  createdAt      DateTime @default(now())
+
+  introRequest IntroRequest @relation(fields: [introRequestId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // INTRO_REQUEST | INTRO_ACCEPTED | INTRO_DECLINED | FEEDBACK_DUE | POINTS_EARNED | ACCOUNT_FROZEN
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  linkUrl   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model BonusTransaction {
+  id             String   @id @default(cuid())
+  userId         String
+  amount         Int
+  reason         String
+  introRequestId String?
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ProfileInsight {
+  id              String   @id @default(cuid())
+  profileId       String   @unique
+  currentThesis   String
+  interests       String   // JSON array of topic strings
+  recentActivity  String   // JSON array of { type, title, source, date }
+  investmentFocus String
+  confidence      Int      @default(75)
+  sources         String   // JSON array of source descriptions
+  generatedAt     DateTime @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id])
+}
