@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 
 interface Lead {
   id: string
@@ -56,6 +56,14 @@ const activityColors: Record<string, string> = {
 }
 
 export default function LeadsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="animate-spin w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full" /></div>}>
+      <LeadsContent />
+    </Suspense>
+  )
+}
+
+function LeadsContent() {
   const searchParams = useSearchParams()
   const icpId = searchParams.get('icpId')
   const [leads, setLeads] = useState<Lead[]>([])
