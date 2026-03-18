@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
+import Tooltip from '@/components/Tooltip'
 
 interface AdminStats {
   totalUsers: number
@@ -88,13 +89,20 @@ export default function AdminPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Total Users', value: stats?.totalUsers ?? '—' },
-          { label: 'Total Connections', value: stats?.totalConnections ?? '—' },
-          { label: 'Total Intros', value: stats?.totalIntros ?? '—' },
-          { label: 'Success Rate', value: `${successRate}%` },
+          { label: 'Total Users', value: stats?.totalUsers ?? '—', tooltip: 'Total number of registered users across all roles (requesters, connectors, and admins).' },
+          { label: 'Total Connections', value: stats?.totalConnections ?? '—', tooltip: 'Total number of connections uploaded across the entire network. Each connection represents a relationship between two profiles.' },
+          { label: 'Total Intros', value: stats?.totalIntros ?? '—', tooltip: 'Total number of introduction requests ever made on the platform, including pending, accepted, declined, and expired.' },
+          { label: 'Success Rate', value: `${successRate}%`, tooltip: 'Percentage of introduction requests that were accepted by connectors. Calculated as accepted intros divided by total intros.' },
         ].map((stat) => (
           <div key={stat.label} className="bg-white border border-gray-100 rounded-xl p-5">
-            <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-sm text-gray-500">{stat.label}</p>
+              <Tooltip content={stat.tooltip}>
+                <svg className="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </Tooltip>
+            </div>
             <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
           </div>
         ))}
@@ -102,15 +110,36 @@ export default function AdminPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5">
-          <p className="text-sm text-emerald-700 mb-1">Accepted</p>
+          <div className="flex items-center gap-1.5 mb-1">
+            <p className="text-sm text-emerald-700">Accepted</p>
+            <Tooltip content="Number of intro requests that connectors agreed to facilitate. Connectors earn 10 bonus points for each accepted intro.">
+              <svg className="w-3.5 h-3.5 text-emerald-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </Tooltip>
+          </div>
           <p className="text-2xl font-semibold text-emerald-800">{stats?.acceptedIntros ?? 0}</p>
         </div>
         <div className="bg-red-50 border border-red-100 rounded-xl p-5">
-          <p className="text-sm text-red-700 mb-1">Declined</p>
+          <div className="flex items-center gap-1.5 mb-1">
+            <p className="text-sm text-red-700">Declined</p>
+            <Tooltip content="Number of intro requests that connectors declined. Common reasons include not knowing the lead well enough or the match not being a good fit.">
+              <svg className="w-3.5 h-3.5 text-red-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </Tooltip>
+          </div>
           <p className="text-2xl font-semibold text-red-800">{stats?.declinedIntros ?? 0}</p>
         </div>
         <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
-          <p className="text-sm text-amber-700 mb-1">Frozen Users</p>
+          <div className="flex items-center gap-1.5 mb-1">
+            <p className="text-sm text-amber-700">Frozen Users</p>
+            <Tooltip content="Users whose accounts are frozen due to unresponded intro requests. Frozen users cannot make new requests until they respond to pending ones.">
+              <svg className="w-3.5 h-3.5 text-amber-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </Tooltip>
+          </div>
           <p className="text-2xl font-semibold text-amber-800">{stats?.frozenUsers ?? 0}</p>
         </div>
       </div>

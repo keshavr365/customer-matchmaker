@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Tooltip from '@/components/Tooltip'
 
 interface Stats {
   activeIntros: number
@@ -11,6 +12,7 @@ interface Stats {
   openConversations: number
   pendingConnectorRequests: number
   totalConnections: number
+  freeIntrosRemaining: number
 }
 
 export default function DashboardPage() {
@@ -30,6 +32,7 @@ export default function DashboardPage() {
   }, [])
 
   const hasContributed = user?.hasContributedData
+  const freeIntrosRemaining = stats?.freeIntrosRemaining ?? 0
 
   return (
     <div>
@@ -40,7 +43,16 @@ export default function DashboardPage() {
         <p className="text-gray-500 mt-1">Here&apos;s what&apos;s happening with your account.</p>
       </div>
 
-      {!hasContributed && (
+      {freeIntrosRemaining > 0 && (
+        <div className="mb-8 bg-emerald-50 border border-emerald-100 rounded-xl p-6">
+          <h2 className="text-base font-semibold text-emerald-900 mb-1">Welcome! You have {freeIntrosRemaining} free intro{freeIntrosRemaining !== 1 ? 's' : ''} remaining</h2>
+          <p className="text-sm text-emerald-700">
+            New users get their first 3 intro requests for free — no points needed and no connection upload required. Try it out!
+          </p>
+        </div>
+      )}
+
+      {!hasContributed && freeIntrosRemaining === 0 && (
         <div className="mb-8 bg-brand-50 border border-brand-100 rounded-xl p-6">
           <h2 className="text-base font-semibold text-brand-900 mb-1">Upload your connections to get started</h2>
           <p className="text-sm text-brand-700 mb-4">
@@ -73,13 +85,40 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Active Intros', value: stats?.activeIntros ?? '—', color: 'text-brand-600' },
-          { label: 'Pending Feedback', value: stats?.pendingFeedback ?? '—', color: 'text-amber-600' },
-          { label: 'Bonus Points', value: stats?.bonusPoints ?? user?.bonusPoints ?? '—', color: 'text-emerald-600' },
-          { label: 'Open Conversations', value: stats?.openConversations ?? '—', color: 'text-purple-600' },
+          {
+            label: 'Active Intros',
+            value: stats?.activeIntros ?? '—',
+            color: 'text-brand-600',
+            tooltip: 'The number of introduction requests you have that are currently pending or accepted. These are active conversations in progress.',
+          },
+          {
+            label: 'Pending Feedback',
+            value: stats?.pendingFeedback ?? '—',
+            color: 'text-amber-600',
+            tooltip: 'Introductions where you were connected but haven\'t yet reported back on how it went. Providing feedback earns you 5 bonus points and is required to keep requesting new intros.',
+          },
+          {
+            label: 'Bonus Points',
+            value: stats?.bonusPoints ?? user?.bonusPoints ?? '—',
+            color: 'text-emerald-600',
+            tooltip: 'Your currency for requesting introductions. Each intro costs 5 points. Earn points by: accepting intros as a connector (+10), providing feedback (+5), or uploading connections (+3). New users start with 10 points plus 3 free intro requests.',
+          },
+          {
+            label: 'Open Conversations',
+            value: stats?.openConversations ?? '—',
+            color: 'text-purple-600',
+            tooltip: 'How many intros you currently have open (pending or accepted). You can have a maximum of 4 open conversations at once. Complete or give feedback on existing ones to free up slots.',
+          },
         ].map((stat) => (
           <div key={stat.label} className="bg-white border border-gray-100 rounded-xl p-5">
-            <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <p className="text-sm text-gray-500">{stat.label}</p>
+              <Tooltip content={stat.tooltip}>
+                <svg className="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </Tooltip>
+            </div>
             <p className={`text-2xl font-semibold ${stat.color}`}>{stat.value}</p>
           </div>
         ))}

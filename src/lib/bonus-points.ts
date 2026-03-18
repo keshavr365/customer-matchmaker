@@ -5,18 +5,25 @@ const INTRO_REQUEST_COST = 5
 const ACCEPT_INTRO_REWARD = 10
 const FEEDBACK_REWARD = 5
 const UPLOAD_REWARD = 3
+const PROFILE_COMPLETE_REWARD = 5
+const FREE_INTRO_ALLOWANCE = 3
 
 interface CanRequestResult {
   allowed: boolean
   reason?: string
+  isFreeRequest?: boolean
 }
 
 export async function canRequestIntro(userId: string): Promise<CanRequestResult> {
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user) return { allowed: false, reason: 'User not found' }
 
-  // 1. Must have contributed connection data
-  if (!user.hasContributedData) {
+  // Count total past requests to determine if user is in grace period
+  const totalRequests = await prisma.introRequest.count({ where: { requesterId: userId } })
+  const isInGracePeriod = totalRequests < FREE_INTRO_ALLOWANCE
+
+  // 1. Must have contributed connection data (relaxed during grace period for first request)
+  if (!user.hasContributedData && !isInGracePeriod) {
     return { allowed: false, reason: 'You must upload your LinkedIn connections before requesting intros.' }
   }
 
@@ -52,9 +59,8 @@ export async function canRequestIntro(userId: string): Promise<CanRequestResult>
     return { allowed: false, reason: 'Please provide feedback on your existing introductions before requesting new ones.' }
   }
 
-  // 5. Course Hero model: must have made at least 1 intro (unless new user)
-  const totalRequests = await prisma.introRequest.count({ where: { requesterId: userId } })
-  if (totalRequests > 0) {
+  // 5. Course Hero model: must have made at least 1 intro (skip during grace period)
+  if (!isInGracePeriod && totalRequests > 0) {
     const introsAcceptedAsConnector = await prisma.introRequest.count({
       where: { connectorId: userId, status: 'ACCEPTED' },
     })
@@ -63,7 +69,12 @@ export async function canRequestIntro(userId: string): Promise<CanRequestResult>
     }
   }
 
-  // 6. Must have enough bonus points
+  // 6. Grace period: first 3 intros are free
+  if (isInGracePeriod) {
+    return { allowed: true, isFreeRequest: true }
+  }
+
+  // 7. Must have enough bonus points
   if (user.bonusPoints < INTRO_REQUEST_COST) {
     return { allowed: false, reason: `You need ${INTRO_REQUEST_COST} bonus points to request an intro. You have ${user.bonusPoints}.` }
   }
@@ -90,11 +101,17 @@ export async function spendPoints(userId: string, reason: string, introRequestId
 
 export async function awardPoints(
   userId: string,
-  type: 'ACCEPT_INTRO' | 'FEEDBACK' | 'UPLOAD',
+  type: 'ACCEPT_INTRO' | 'FEEDBACK' | 'UPLOAD' | 'PROFILE_COMPLETE',
   introRequestId?: string
 ): Promise<void> {
   const amount =
-    type === 'ACCEPT_INTRO' ? ACCEPT_INTRO_REWARD : type === 'FEEDBACK' ? FEEDBACK_REWARD : UPLOAD_REWARD
+    type === 'ACCEPT_INTRO'
+      ? ACCEPT_INTRO_REWARD
+      : type === 'FEEDBACK'
+      ? FEEDBACK_REWARD
+      : type === 'PROFILE_COMPLETE'
+      ? PROFILE_COMPLETE_REWARD
+      : UPLOAD_REWARD
 
   await prisma.$transaction([
     prisma.user.update({

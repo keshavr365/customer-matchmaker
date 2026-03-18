@@ -9,7 +9,7 @@ export async function GET() {
 
   const userId = (session.user as any).id
 
-  const [activeIntros, pendingFeedback, openConversations, pendingConnectorRequests, totalConnections, user] =
+  const [activeIntros, pendingFeedback, openConversations, pendingConnectorRequests, totalConnections, totalRequests, user] =
     await Promise.all([
       prisma.introRequest.count({
         where: { requesterId: userId, status: { in: ['PENDING', 'ACCEPTED'] } },
@@ -35,8 +35,13 @@ export async function GET() {
           ],
         },
       }),
+      prisma.introRequest.count({
+        where: { requesterId: userId },
+      }),
       prisma.user.findUnique({ where: { id: userId }, select: { bonusPoints: true } }),
     ])
+
+  const freeIntrosRemaining = Math.max(0, 3 - totalRequests)
 
   return NextResponse.json({
     activeIntros,
@@ -45,5 +50,6 @@ export async function GET() {
     openConversations,
     pendingConnectorRequests,
     totalConnections,
+    freeIntrosRemaining,
   })
 }

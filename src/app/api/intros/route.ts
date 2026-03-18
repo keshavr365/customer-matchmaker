@@ -71,8 +71,10 @@ export async function POST(req: NextRequest) {
     data: { status: 'INTRO_SENT' },
   })
 
-  // Spend bonus points
-  await spendPoints(userId, 'Intro request', introRequest.id)
+  // Spend bonus points (free during grace period)
+  if (!check.isFreeRequest) {
+    await spendPoints(userId, 'Intro request', introRequest.id)
+  }
 
   // Notify connector
   await createNotification(

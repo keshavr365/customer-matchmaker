@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
+import Tooltip from '@/components/Tooltip'
 
 interface Intro {
   id: string
@@ -514,7 +515,9 @@ function InsightPanel({ insight }: { insight: InsightData }) {
         </svg>
         <h4 className="text-sm font-semibold text-gray-900">Deep Research Insights</h4>
         <div className="flex items-center gap-1.5 ml-auto">
-          <span className="text-xs text-gray-400">Confidence</span>
+          <Tooltip content="How confident we are in these insights based on the number and recency of public sources found. Higher confidence means more corroborating data points.">
+            <span className="text-xs text-gray-400 cursor-help">Confidence</span>
+          </Tooltip>
           <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-full bg-brand-500 rounded-full"
@@ -527,13 +530,27 @@ function InsightPanel({ insight }: { insight: InsightData }) {
 
       {/* Current Thesis */}
       <div className="mb-4">
-        <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Current Thesis</h5>
+        <div className="flex items-center gap-1 mb-1.5">
+          <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Current Thesis</h5>
+          <Tooltip content="A synthesized summary of this person's current strategic focus and viewpoints, based on their recent public content and activity.">
+            <svg className="w-3 h-3 text-gray-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </Tooltip>
+        </div>
         <p className="text-sm text-gray-700 leading-relaxed">{insight.currentThesis}</p>
       </div>
 
       {/* Active Interests */}
       <div className="mb-4">
-        <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Active Interests</h5>
+        <div className="flex items-center gap-1 mb-1.5">
+          <h5 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Active Interests</h5>
+          <Tooltip content="Topics and themes this person has been actively engaging with recently. Use these to find common ground and tailor your outreach.">
+            <svg className="w-3 h-3 text-gray-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </Tooltip>
+        </div>
         <div className="flex flex-wrap gap-1.5">
           {insight.interests.map((interest, i) => (
             <span
