@@ -72,6 +72,8 @@ function LeadsContent() {
   const [requesting, setRequesting] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [showCount, setShowCount] = useState(3)
+  const [activeIntroForm, setActiveIntroForm] = useState<string | null>(null)
+  const [bulletPoints, setBulletPoints] = useState(['', '', ''])
 
   // Deep Research state
   const [researching, setResearching] = useState<string | null>(null)
@@ -97,12 +99,14 @@ function LeadsContent() {
       const res = await fetch('/api/intros', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leadId }),
+        body: JSON.stringify({ leadId, bulletPoints }),
       })
       const data = await res.json()
       if (res.ok) {
         setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status: 'INTRO_SENT' } : l)))
         setMessage('Intro request sent successfully!')
+        setActiveIntroForm(null)
+        setBulletPoints(['', '', ''])
       } else {
         setMessage(data.error || 'Failed to request intro.')
       }
@@ -248,11 +252,14 @@ function LeadsContent() {
 
                     {lead.status === 'SUGGESTED' && (
                       <button
-                        onClick={() => requestIntro(lead.id)}
-                        disabled={requesting === lead.id}
-                        className="bg-brand-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50"
+                        onClick={() => {
+                          setActiveIntroForm(activeIntroForm === lead.id ? null : lead.id)
+                          setBulletPoints(['', '', ''])
+                          setMessage('')
+                        }}
+                        className="bg-brand-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors"
                       >
-                        {requesting === lead.id ? 'Requesting...' : 'Request Intro'}
+                        {activeIntroForm === lead.id ? 'Cancel' : 'Request Intro'}
                       </button>
                     )}
                     {lead.status === 'INTRO_SENT' && (
@@ -269,6 +276,46 @@ function LeadsContent() {
                 </div>
               </div>
             </div>
+
+            {/* Bullet Points Intro Request Form */}
+            {activeIntroForm === lead.id && (
+              <div className="border-t border-gray-100 bg-gray-50 px-6 py-5">
+                <h4 className="text-sm font-semibold text-gray-900 mb-1">Why should {lead.profile.fullName} take this meeting?</h4>
+                <p className="text-xs text-gray-500 mb-4">Write 3 bullet points from <strong>their</strong> perspective — not why you want the intro, but why it&apos;s valuable for them. This makes it easy for the connector to forward.</p>
+                {[
+                  { label: 'Why this is relevant to them', placeholder: `e.g. "Your team at ${lead.profile.company || 'their company'} is scaling fast and likely hitting the exact data pipeline bottlenecks we solve..."` },
+                  { label: "Why it's in scope for their role/company", placeholder: `e.g. "As ${lead.profile.title || 'a leader'}, you're evaluating tools in this space — we're already used by 3 similar companies..."` },
+                  { label: 'What they might find interesting', placeholder: `e.g. "We just published benchmark data on reducing pipeline latency by 60% that could be useful regardless..."` },
+                ].map((field, i) => (
+                  <div key={i} className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-medium text-gray-700">{i + 1}. {field.label}</label>
+                      <span className={`text-xs ${bulletPoints[i].trim().length >= 20 ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        {bulletPoints[i].trim().length}/20 min
+                      </span>
+                    </div>
+                    <textarea
+                      value={bulletPoints[i]}
+                      onChange={(e) => {
+                        const updated = [...bulletPoints]
+                        updated[i] = e.target.value
+                        setBulletPoints(updated)
+                      }}
+                      placeholder={field.placeholder}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+                ))}
+                <button
+                  onClick={() => requestIntro(lead.id)}
+                  disabled={requesting === lead.id || bulletPoints.some(bp => bp.trim().length < 20)}
+                  className="bg-brand-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50 mt-1"
+                >
+                  {requesting === lead.id ? 'Sending...' : 'Send Intro Request'}
+                </button>
+              </div>
+            )}
 
             {/* Insight Panel */}
             {expandedInsight === lead.profile.id && insights[lead.profile.id] && (

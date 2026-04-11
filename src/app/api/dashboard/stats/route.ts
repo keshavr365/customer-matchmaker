@@ -41,7 +41,7 @@ export async function GET() {
       prisma.user.findUnique({ where: { id: userId }, select: { bonusPoints: true } }),
     ])
 
-  const freeIntrosRemaining = Math.max(0, 3 - totalRequests)
+  const freeIntrosRemaining = Math.max(0, 5 - totalRequests)
 
   return NextResponse.json({
     activeIntros,

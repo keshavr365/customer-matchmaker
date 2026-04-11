@@ -47,7 +47,7 @@ export default function DashboardPage() {
         <div className="mb-8 bg-emerald-50 border border-emerald-100 rounded-xl p-6">
           <h2 className="text-base font-semibold text-emerald-900 mb-1">Welcome! You have {freeIntrosRemaining} free intro{freeIntrosRemaining !== 1 ? 's' : ''} remaining</h2>
           <p className="text-sm text-emerald-700">
-            New users get their first 3 intro requests for free — no points needed and no connection upload required. Try it out!
+            New users get their first 5 intro requests for free — no points needed. Your first intros are critical, so we prioritize quality matches. Try it out!
           </p>
         </div>
       )}

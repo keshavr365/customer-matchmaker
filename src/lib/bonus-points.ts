@@ -6,7 +6,7 @@ const ACCEPT_INTRO_REWARD = 10
 const FEEDBACK_REWARD = 5
 const UPLOAD_REWARD = 3
 const PROFILE_COMPLETE_REWARD = 5
-const FREE_INTRO_ALLOWANCE = 3
+const FREE_INTRO_ALLOWANCE = 5
 
 interface CanRequestResult {
   allowed: boolean

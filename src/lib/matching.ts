@@ -190,20 +190,3 @@ export async function findBestConnector(
   return null
 }
 
-export function generateDraftMessage(
-  requesterName: string,
-  leadName: string,
-  leadCompany: string,
-  leadTitle: string,
-  icpDescription: string
-): string {
-  return `Hi,
-
-I'd like to introduce you to ${requesterName}, who is building something relevant to your work${leadCompany ? ` at ${leadCompany}` : ''}.
-
-${requesterName} is looking to connect with ${leadTitle ? leadTitle + 's' : 'professionals'} in the space${icpDescription ? `, specifically around ${icpDescription}` : ''}.
-
-I think there could be a valuable conversation here. Would you be open to a brief chat?
-
-Best regards`
-}

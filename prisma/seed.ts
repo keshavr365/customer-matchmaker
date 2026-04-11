@@ -378,7 +378,7 @@ async function main() {
       connectorId: bob.id,
       connectionType: 'DIRECT',
       status: 'ACCEPTED',
-      draftMessage: `Hi Sarah,\n\nI'd like to introduce you to Alice Chen, CEO of DataFlow. She's building a data pipeline platform that could be very relevant to your work at CloudScale.\n\nAlice is looking to connect with VP-level engineering leaders at SaaS companies. I think there could be a valuable conversation here.\n\nWould you be open to a brief chat?\n\nBest regards`,
+      draftMessage: `From Alice Chen — why this intro is valuable for Sarah Johnson:\n\n1. Why this is relevant to them:\nYour engineering team at CloudScale is scaling cloud infrastructure and likely hitting the exact data pipeline bottlenecks that DataFlow was built to solve — we work with 3 similar companies at your stage.\n\n2. Why it's in scope for their role/company:\nAs VP of Engineering, you're evaluating tools that reduce pipeline complexity. We've helped teams like yours cut data pipeline maintenance time by 60%.\n\n3. What they might find interesting:\nWe just published benchmark data comparing data pipeline architectures at scale — useful regardless of whether DataFlow is a fit. Happy to share the findings over a quick call.`,
       respondedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       expiresAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
     },
@@ -424,7 +424,7 @@ async function main() {
       connectionType: 'INDIRECT',
       contributorProfileId: carolProfile.id,
       status: 'PENDING',
-      draftMessage: `Hi James,\n\nI'd like to introduce you to Carol Park, Founder of HealthBridge. She's building a digital health platform that could be relevant to your role at MedTech Solutions.\n\nCarol is looking to connect with IT directors at healthcare companies. Would you be open to a brief chat?\n\nBest regards`,
+      draftMessage: `From Carol Park — why this intro is valuable for James Anderson:\n\n1. Why this is relevant to them:\nMedTech Solutions is actively pursuing digital transformation in patient engagement — HealthBridge has built a platform that directly addresses the interoperability challenges your team faces with existing EHR systems.\n\n2. Why it's in scope for their role/company:\nAs Director of IT, you're evaluating patient engagement solutions that integrate with your existing infrastructure. HealthBridge already integrates with the major EHR platforms your team likely uses.\n\n3. What they might find interesting:\nWe have case study data from 2 healthcare companies your size showing 40% improvement in patient follow-up rates after implementing digital engagement tools — happy to share over a quick call.`,
       expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
     },
   })

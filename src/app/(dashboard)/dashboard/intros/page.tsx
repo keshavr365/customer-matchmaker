@@ -83,7 +83,9 @@ export default function IntrosPage() {
   const [activeFeedback, setActiveFeedback] = useState<string | null>(null)
   const [feedbackStatus, setFeedbackStatus] = useState('')
   const [feedbackComment, setFeedbackComment] = useState('')
-  const [whatsappConnected, setWhatsappConnected] = useState(false)
+  const [followedUpViaEmail, setFollowedUpViaEmail] = useState(false)
+  const [introValuable, setIntroValuable] = useState<boolean | null>(null)
+  const [connectorNote, setConnectorNote] = useState('')
   const [processing, setProcessing] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -133,7 +135,7 @@ export default function IntrosPage() {
       const res = await fetch(`/api/intros/${introId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'accept' }),
+        body: JSON.stringify({ action: 'accept', connectorNote: connectorNote.trim() || undefined }),
       })
       if (res.ok) {
         setMessage('Intro accepted! The introduction will be made.')
@@ -191,8 +193,8 @@ export default function IntrosPage() {
         body: JSON.stringify({
           introRequestId: introId,
           status: feedbackStatus,
-          comment: feedbackComment,
-          connectedOnWhatsapp: whatsappConnected,
+          comment: feedbackComment || (introValuable !== null ? (introValuable ? 'Valuable intro' : 'Not valuable') : undefined),
+          connectedOnWhatsapp: followedUpViaEmail, // reuse DB field
         }),
       })
       if (res.ok) {
@@ -200,7 +202,8 @@ export default function IntrosPage() {
         setActiveFeedback(null)
         setFeedbackStatus('')
         setFeedbackComment('')
-        setWhatsappConnected(false)
+        setFollowedUpViaEmail(false)
+        setIntroValuable(null)
         fetchIntros()
       } else {
         const data = await res.json()
@@ -307,9 +310,21 @@ export default function IntrosPage() {
                         </button>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[intro.status] || ''}`}>
-                      {intro.status}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[intro.status] || ''}`}>
+                        {intro.status}
+                      </span>
+                      <Tooltip content={
+                        intro.status === 'PENDING' ? 'This intro is waiting for the connector to accept or decline. Connectors have 3 days to respond before the request expires.' :
+                        intro.status === 'ACCEPTED' ? 'The connector has agreed to make this introduction. They will reach out to the lead on your behalf. Please follow up promptly via email.' :
+                        intro.status === 'DECLINED' ? 'The connector has declined this request. This could be due to relationship concerns, timing, or fit. See the reason below.' :
+                        'This intro request expired because the connector did not respond within 3 days. You can try requesting through a different connector.'
+                      }>
+                        <svg className="w-3.5 h-3.5 text-gray-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </Tooltip>
+                    </div>
                   </div>
 
                   <div className="text-sm text-gray-500 space-y-1 mb-4">
@@ -321,8 +336,17 @@ export default function IntrosPage() {
                       <span className="text-gray-700">Connector:</span> {intro.connector.name}
                       {isConnector && ' (you)'}
                     </p>
-                    <p>
+                    <p className="flex items-center gap-1">
                       <span className="text-gray-700">Type:</span> {intro.connectionType === 'DIRECT' ? 'Direct connection' : 'Indirect (via contributor)'}
+                      <Tooltip content={
+                        intro.connectionType === 'DIRECT'
+                          ? 'The connector knows this lead directly — they are 1st-degree connections. Direct intros have the highest success rate.'
+                          : 'The connector is connected to someone who knows the lead. This is a 2nd-degree intro — still warm, but the connector may add a note about the mutual connection.'
+                      }>
+                        <svg className="w-3 h-3 text-gray-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </Tooltip>
                     </p>
                     <p>
                       <span className="text-gray-700">Requested:</span> {new Date(intro.createdAt).toLocaleDateString()}
@@ -332,10 +356,24 @@ export default function IntrosPage() {
                   {/* Connector actions */}
                   {isConnector && intro.status === 'PENDING' && (
                     <div className="border-t border-gray-100 pt-4 mt-4">
-                      <p className="text-sm font-medium text-gray-700 mb-3">Draft Introduction Message:</p>
-                      <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600 mb-4 whitespace-pre-line">
+                      <p className="text-sm font-medium text-gray-700 mb-1">Why {intro.requester.name} thinks this intro is valuable:</p>
+                      <p className="text-xs text-gray-500 mb-3">Use these points to craft your intro email — or just forward them directly.</p>
+                      <div className="bg-brand-50 border border-brand-100 rounded-lg p-4 text-sm text-gray-700 mb-4 whitespace-pre-line">
                         {intro.draftMessage}
                       </div>
+
+                      <div className="mb-4">
+                        <label className="text-sm font-medium text-gray-700 block mb-1">Your personal note (optional)</label>
+                        <p className="text-xs text-gray-500 mb-2">Write your intro in your own voice — e.g. &quot;Hey, I know {intro.requester.name} — great founder. See their notes below.&quot;</p>
+                        <textarea
+                          value={connectorNote}
+                          onChange={(e) => setConnectorNote(e.target.value)}
+                          placeholder="Add your personal touch to this introduction..."
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+                        />
+                      </div>
+
                       <div className="flex gap-3">
                         <button
                           onClick={() => handleAccept(intro.id)}
@@ -406,13 +444,12 @@ export default function IntrosPage() {
 
                       {activeFeedback === intro.id && (
                         <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
-                          <p className="text-sm font-medium text-gray-700">How is this introduction going?</p>
+                          <p className="text-sm font-medium text-gray-700">Did this intro lead to a conversation?</p>
                           <div className="space-y-2">
                             {[
-                              { value: 'NO_RESPONSE', label: 'No response so far' },
-                              { value: 'IN_TALKS', label: 'In talks' },
-                              { value: 'STALE', label: 'Stale' },
-                              { value: 'NOT_MOVING_FORWARD', label: 'Not moving forward' },
+                              { value: 'IN_TALKS', label: 'Yes, we had a conversation' },
+                              { value: 'NO_RESPONSE', label: 'No response yet' },
+                              { value: 'NOT_MOVING_FORWARD', label: 'They declined / not moving forward' },
                             ].map((option) => (
                               <label key={option.value} className="flex items-center gap-2 text-sm text-gray-600">
                                 <input
@@ -420,7 +457,10 @@ export default function IntrosPage() {
                                   name="feedbackStatus"
                                   value={option.value}
                                   checked={feedbackStatus === option.value}
-                                  onChange={(e) => setFeedbackStatus(e.target.value)}
+                                  onChange={(e) => {
+                                    setFeedbackStatus(e.target.value)
+                                    if (e.target.value !== 'IN_TALKS') setIntroValuable(null)
+                                  }}
                                   className="text-brand-600"
                                 />
                                 {option.label}
@@ -428,29 +468,51 @@ export default function IntrosPage() {
                             ))}
                           </div>
 
+                          {feedbackStatus === 'IN_TALKS' && (
+                            <div className="pt-2 border-t border-gray-200">
+                              <p className="text-sm font-medium text-gray-700 mb-2">Was this intro valuable for your business?</p>
+                              <div className="flex gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setIntroValuable(true)}
+                                  className={`px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors ${introValuable === true ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setIntroValuable(false)}
+                                  className={`px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors ${introValuable === false ? 'bg-red-50 border-red-200 text-red-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                  Not really
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
                           <label className="flex items-center gap-2 text-sm text-gray-600 pt-2 border-t border-gray-200">
                             <input
                               type="checkbox"
-                              checked={whatsappConnected}
-                              onChange={(e) => setWhatsappConnected(e.target.checked)}
+                              checked={followedUpViaEmail}
+                              onChange={(e) => setFollowedUpViaEmail(e.target.checked)}
                               className="text-brand-600 rounded"
                             />
-                            Did you connect on WhatsApp?
+                            I followed up via email
                           </label>
+                          <p className="text-xs text-gray-400 -mt-1 ml-6">Tip: Keep the connector CC&apos;d on your first reply so they can see the conversation started.</p>
 
                           <textarea
                             value={feedbackComment}
                             onChange={(e) => setFeedbackComment(e.target.value.slice(0, 280))}
-                            placeholder="Additional comments (optional, max 280 characters)"
+                            placeholder="Additional comments (optional)"
                             rows={2}
                             maxLength={280}
                             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
                           />
-                          <p className="text-xs text-gray-400">{feedbackComment.length}/280</p>
 
                           <button
                             onClick={() => handleFeedback(intro.id)}
-                            disabled={processing}
+                            disabled={processing || !feedbackStatus}
                             className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50"
                           >
                             Submit Feedback
