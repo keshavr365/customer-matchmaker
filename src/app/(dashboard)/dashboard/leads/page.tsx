@@ -18,6 +18,26 @@ interface Lead {
     region: string
     headline: string
   }
+  connector?: {
+    id: string
+    name: string
+    connectionType: string
+  } | null
+}
+
+// Generate sensible, editable default bullet points based on the lead's profile.
+// Rationale: most reasons are repeated across intros — pre-fill to reduce friction,
+// but keep them fully editable so the requester can personalize.
+function defaultBulletPoints(lead: Lead): [string, string, string] {
+  const firstName = lead.profile.fullName.split(' ')[0] || 'them'
+  const company = lead.profile.company || 'their company'
+  const title = lead.profile.title || 'their role'
+  const industry = lead.profile.industry || 'their industry'
+  return [
+    `${firstName}'s team at ${company} is likely facing the exact challenges our product solves — we've helped similar ${industry.toLowerCase()} teams reduce time-to-value significantly.`,
+    `As ${title}, evaluating tools in this space is directly in scope. Worth a 20-minute conversation even if only to share what we're seeing across peer companies.`,
+    `Happy to share recent benchmark data and customer outcomes from the ${industry.toLowerCase()} space that could be useful regardless of whether we end up working together.`,
+  ]
 }
 
 interface ActivityItem {
@@ -104,7 +124,13 @@ function LeadsContent() {
       const data = await res.json()
       if (res.ok) {
         setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status: 'INTRO_SENT' } : l)))
-        setMessage('Intro request sent successfully!')
+        const connectorName = data?.connector?.name
+        const leadName = data?.leadName
+        setMessage(
+          connectorName && leadName
+            ? `Request sent to ${connectorName} — they'll reach out to ${leadName} if they accept. ${leadName} won't see the request unless the connector forwards it.`
+            : 'Intro request sent successfully!'
+        )
         setActiveIntroForm(null)
         setBulletPoints(['', '', ''])
       } else {
@@ -251,16 +277,34 @@ function LeadsContent() {
                     </button>
 
                     {lead.status === 'SUGGESTED' && (
-                      <button
-                        onClick={() => {
-                          setActiveIntroForm(activeIntroForm === lead.id ? null : lead.id)
-                          setBulletPoints(['', '', ''])
-                          setMessage('')
-                        }}
-                        className="bg-brand-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors"
-                      >
-                        {activeIntroForm === lead.id ? 'Cancel' : 'Request Intro'}
-                      </button>
+                      <div className="flex flex-col items-end gap-1">
+                        <button
+                          onClick={() => {
+                            const opening = activeIntroForm !== lead.id
+                            setActiveIntroForm(opening ? lead.id : null)
+                            // Pre-fill bullet points with editable defaults so the user
+                            // can send a thoughtful request in seconds instead of writing
+                            // the same boilerplate for every intro.
+                            setBulletPoints(opening ? [...defaultBulletPoints(lead)] : ['', '', ''])
+                            setMessage('')
+                          }}
+                          disabled={!lead.connector}
+                          className="bg-brand-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={lead.connector ? `Request sent via ${lead.connector.name}` : 'No connector available for this lead'}
+                        >
+                          {activeIntroForm === lead.id ? 'Cancel' : 'Request Intro'}
+                        </button>
+                        {lead.connector ? (
+                          <p className="text-[11px] text-gray-500 text-right max-w-[200px]">
+                            Sent to <span className="font-medium text-gray-700">{lead.connector.name}</span>
+                            {lead.connector.connectionType === 'DIRECT' ? ' (direct connection)' : ' (2nd-degree)'} — not to {lead.profile.fullName.split(' ')[0]}.
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-amber-600 text-right max-w-[200px]">
+                            No connector found in your network.
+                          </p>
+                        )}
+                      </div>
                     )}
                     {lead.status === 'INTRO_SENT' && (
                       <span className="px-3 py-1.5 bg-brand-50 text-brand-700 rounded-lg text-sm font-medium">
@@ -280,8 +324,27 @@ function LeadsContent() {
             {/* Bullet Points Intro Request Form */}
             {activeIntroForm === lead.id && (
               <div className="border-t border-gray-100 bg-gray-50 px-6 py-5">
-                <h4 className="text-sm font-semibold text-gray-900 mb-1">Why should {lead.profile.fullName} take this meeting?</h4>
-                <p className="text-xs text-gray-500 mb-4">Write 3 bullet points from <strong>their</strong> perspective — not why you want the intro, but why it&apos;s valuable for them. This makes it easy for the connector to forward.</p>
+                {lead.connector && (
+                  <div className="mb-4 p-3 bg-brand-50 border border-brand-100 rounded-lg flex items-start gap-2">
+                    <svg className="w-4 h-4 text-brand-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-xs text-brand-800 leading-relaxed">
+                      <strong>This request goes to {lead.connector.name}</strong>, not to {lead.profile.fullName}. {lead.connector.name} will review your bullet points below and — if they accept — forward the intro to {lead.profile.fullName.split(' ')[0]} on your behalf.
+                    </p>
+                  </div>
+                )}
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="text-sm font-semibold text-gray-900">Why should {lead.profile.fullName} take this meeting?</h4>
+                  <button
+                    type="button"
+                    onClick={() => setBulletPoints([...defaultBulletPoints(lead)])}
+                    className="text-xs text-brand-600 hover:underline"
+                  >
+                    Reset to suggestion
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">We&apos;ve pre-filled these based on {lead.profile.fullName.split(' ')[0]}&apos;s profile — edit anything to personalize. Write from <strong>their</strong> perspective: why it&apos;s valuable for them, not why you want the intro.</p>
                 {[
                   { label: 'Why this is relevant to them', placeholder: `e.g. "Your team at ${lead.profile.company || 'their company'} is scaling fast and likely hitting the exact data pipeline bottlenecks we solve..."` },
                   { label: "Why it's in scope for their role/company", placeholder: `e.g. "As ${lead.profile.title || 'a leader'}, you're evaluating tools in this space — we're already used by 3 similar companies..."` },

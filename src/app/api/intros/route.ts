@@ -99,7 +99,22 @@ ${bulletPoints[2].trim()}`
     `/dashboard/intros`
   )
 
-  return NextResponse.json({ id: introRequest.id }, { status: 201 })
+  // Return connector info so the UI can show who the request was routed to
+  const connectorUser = await prisma.user.findUnique({
+    where: { id: connectorResult.connectorId },
+    select: { id: true, name: true },
+  })
+
+  return NextResponse.json(
+    {
+      id: introRequest.id,
+      connector: connectorUser
+        ? { id: connectorUser.id, name: connectorUser.name, connectionType: connectorResult.connectionType }
+        : null,
+      leadName: lead.profile.fullName,
+    },
+    { status: 201 }
+  )
 }
 
 export async function GET() {

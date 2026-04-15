@@ -3,10 +3,119 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+// Comprehensive industry list aligned with LinkedIn's industry taxonomy
 const industries = [
-  'Technology', 'Healthcare', 'Finance', 'Education', 'E-commerce',
-  'SaaS', 'Manufacturing', 'Real Estate', 'Media', 'Consulting',
-  'Energy', 'Transportation', 'Food & Beverage', 'Other',
+  'Accounting',
+  'Advertising & Marketing',
+  'Aerospace & Defense',
+  'Agriculture',
+  'Airlines & Aviation',
+  'Apparel & Fashion',
+  'Architecture & Planning',
+  'Artificial Intelligence',
+  'Automotive',
+  'Banking',
+  'Biotechnology',
+  'Broadcast Media',
+  'Chemicals',
+  'Civic & Social Organization',
+  'Civil Engineering',
+  'Commercial Real Estate',
+  'Computer & Network Security',
+  'Computer Hardware',
+  'Computer Software',
+  'Construction',
+  'Consulting',
+  'Consumer Electronics',
+  'Consumer Goods',
+  'Consumer Services',
+  'Cybersecurity',
+  'Design',
+  'E-commerce',
+  'Education',
+  'Electrical & Electronic Manufacturing',
+  'Energy & Utilities',
+  'Entertainment',
+  'Environmental Services',
+  'Events Services',
+  'Facilities Services',
+  'Financial Services',
+  'Fintech',
+  'Food & Beverages',
+  'Gaming',
+  'Government',
+  'Graphic Design',
+  'Healthcare',
+  'Higher Education',
+  'Hospitality',
+  'Human Resources',
+  'Import & Export',
+  'Industrial Automation',
+  'Information Services',
+  'Information Technology',
+  'Insurance',
+  'International Trade',
+  'Internet',
+  'Investment Banking',
+  'Investment Management',
+  'Legal Services',
+  'Leisure & Travel',
+  'Logistics & Supply Chain',
+  'Luxury Goods',
+  'Machinery',
+  'Management Consulting',
+  'Manufacturing',
+  'Maritime',
+  'Market Research',
+  'Marketing & Advertising',
+  'Media Production',
+  'Medical Devices',
+  'Mental Health Care',
+  'Mining & Metals',
+  'Nanotechnology',
+  'Nonprofit',
+  'Oil & Gas',
+  'Online Media',
+  'Outsourcing/Offshoring',
+  'Packaging',
+  'Paper & Forest Products',
+  'Pharmaceuticals',
+  'Philanthropy',
+  'Photography',
+  'Professional Training',
+  'Public Relations',
+  'Public Safety',
+  'Publishing',
+  'Real Estate',
+  'Recreational Facilities',
+  'Religious Institutions',
+  'Renewables & Environment',
+  'Research',
+  'Restaurants',
+  'Retail',
+  'Robotics',
+  'SaaS',
+  'Security & Investigations',
+  'Semiconductors',
+  'Shipping',
+  'Social Media',
+  'Sports',
+  'Staffing & Recruiting',
+  'Technology',
+  'Telecommunications',
+  'Textiles',
+  'Think Tanks',
+  'Tobacco',
+  'Transportation',
+  'Utilities',
+  'Venture Capital & Private Equity',
+  'Veterinary',
+  'Warehousing',
+  'Wholesale',
+  'Wine & Spirits',
+  'Wireless',
+  'Writing & Editing',
+  'Other',
 ]
 
 const companySizes = [
@@ -22,18 +131,38 @@ export default function NewICPPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([])
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([])
+
+  function toggleSize(s: string) {
+    setSelectedSizes((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
+  }
+  function toggleRegion(r: string) {
+    setSelectedRegions((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]))
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
     setError('')
 
+    if (selectedSizes.length === 0) {
+      setError('Please select at least one company size.')
+      setLoading(false)
+      return
+    }
+    if (selectedRegions.length === 0) {
+      setError('Please select at least one region.')
+      setLoading(false)
+      return
+    }
+
     const formData = new FormData(e.currentTarget)
     const body = {
       industry: formData.get('industry') as string,
       role: formData.get('role') as string,
-      companySize: formData.get('companySize') as string,
-      region: formData.get('region') as string,
+      companySize: selectedSizes.join(','),
+      region: selectedRegions.join(','),
       description: formData.get('description') as string,
     }
 
@@ -105,37 +234,61 @@ export default function NewICPPage() {
             </div>
 
             <div>
-              <label htmlFor="companySize" className="block text-sm font-medium text-gray-700 mb-1">
-                Company Size
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Company Size <span className="text-gray-400 font-normal">(select all that apply)</span>
               </label>
-              <select
-                id="companySize"
-                name="companySize"
-                required
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
-              >
-                <option value="">Select company size</option>
-                {companySizes.map((s) => (
-                  <option key={s} value={s}>{s} employees</option>
-                ))}
-              </select>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {companySizes.map((s) => {
+                  const checked = selectedSizes.includes(s)
+                  return (
+                    <label
+                      key={s}
+                      className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm cursor-pointer transition-colors ${
+                        checked
+                          ? 'bg-brand-50 border-brand-200 text-brand-700'
+                          : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleSize(s)}
+                        className="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500"
+                      />
+                      <span>{s}</span>
+                    </label>
+                  )
+                })}
+              </div>
             </div>
 
             <div>
-              <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-1">
-                Region
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Region <span className="text-gray-400 font-normal">(select all that apply)</span>
               </label>
-              <select
-                id="region"
-                name="region"
-                required
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
-              >
-                <option value="">Select a region</option>
-                {regions.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {regions.map((r) => {
+                  const checked = selectedRegions.includes(r)
+                  return (
+                    <label
+                      key={r}
+                      className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm cursor-pointer transition-colors ${
+                        checked
+                          ? 'bg-brand-50 border-brand-200 text-brand-700'
+                          : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleRegion(r)}
+                        className="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500"
+                      />
+                      <span>{r}</span>
+                    </label>
+                  )
+                })}
+              </div>
             </div>
 
             <div>

@@ -44,17 +44,18 @@ export function scoreProfile(profile: ProfileData, icp: ICP): number {
     }
   }
 
-  // Company size match (20 points)
+  // Company size match (20 points) — supports multi-select (comma-separated)
   if (profile.companySize && icp.companySize) {
-    if (profile.companySize === icp.companySize) score += 20
+    const selectedSizes = icp.companySize.split(',').map((s) => s.trim()).filter(Boolean)
+    if (selectedSizes.includes(profile.companySize)) score += 20
   }
 
-  // Region match (15 points)
+  // Region match (15 points) — supports multi-select (comma-separated)
   if (profile.region && icp.region) {
+    const selectedRegions = icp.region.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
     const pReg = profile.region.toLowerCase()
-    const iReg = icp.region.toLowerCase()
-    if (pReg === iReg) score += 15
-    else if (pReg.includes(iReg) || iReg.includes(pReg)) score += 10
+    if (selectedRegions.includes(pReg)) score += 15
+    else if (selectedRegions.some((r) => pReg.includes(r) || r.includes(pReg))) score += 10
   }
 
   // Description keyword overlap (10 points)

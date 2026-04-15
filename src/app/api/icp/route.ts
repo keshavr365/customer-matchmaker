@@ -9,7 +9,18 @@ export async function POST(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const userId = (session.user as any).id
-  const { industry, role, companySize, region, description } = await req.json()
+  const body = await req.json()
+  const { industry, role, description } = body
+
+  // companySize / region can arrive as a string (single) or array (multi).
+  // Normalize to a comma-separated string for storage in the existing String column.
+  const normalize = (v: unknown): string => {
+    if (Array.isArray(v)) return v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).join(',')
+    if (typeof v === 'string') return v.trim()
+    return ''
+  }
+  const companySize = normalize(body.companySize)
+  const region = normalize(body.region)
 
   if (!industry || !role || !companySize || !region) {
     return NextResponse.json({ error: 'All fields are required.' }, { status: 400 })
